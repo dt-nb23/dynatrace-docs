@@ -15,10 +15,19 @@ def parse_sitemap(sitemap_xml):
     urls = [loc.text for loc in soup.find_all('loc')]
     return urls
 
-def fetch_page(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.text
+def fetch_page(url, retries=3):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        if retries > 0:
+            print(f"Error fetching {url}: {e}. Retrying...")
+            time.sleep(5)
+            return fetch_page(url, retries - 1)
+        else:
+            print(f"Failed to fetch {url} after multiple attempts.")
+            raise
 
 def extract_content(html):
     soup = BeautifulSoup(html, 'html.parser')
