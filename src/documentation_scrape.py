@@ -45,8 +45,10 @@ def save_markdown(content, filename):
     output_dir = './outputs'
     os.makedirs(output_dir, exist_ok=True)
     filepath = os.path.join(output_dir, filename)
+    link = filename.replace('_', '/')
     with open(filepath, 'w', encoding='utf-8') as file:
         file.write(content)
+        file.write(f"[Link to Documentation Page]({link})\n\n")
 
 def process_url(url):
     html = fetch_page(url)
