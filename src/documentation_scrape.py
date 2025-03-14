@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import markdownify
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 def fetch_sitemap(url):
     response = requests.get(url)
@@ -21,12 +22,15 @@ def fetch_page(url):
 
 def extract_content(html):
     soup = BeautifulSoup(html, 'html.parser')
-    for section in soup.find_all('section'):
+    # Remove unwanted sections
+    for section in soup.find_all(['header', 'footer', 'nav', 'aside']):
         section.decompose()
-    return soup.get_text()
+    # Extract main content
+    main_content = soup.find('main') or soup.body
+    return str(main_content)
 
-def convert_to_markdown(text):
-    return markdownify.markdownify(text, heading_style="ATX")
+def convert_to_markdown(html):
+    return markdownify.markdownify(html, heading_style="ATX")
 
 def save_markdown(content, filename):
     output_dir = './outputs'
@@ -37,9 +41,9 @@ def save_markdown(content, filename):
 
 def process_url(url):
     html = fetch_page(url)
-    text = extract_content(html)
-    markdown = convert_to_markdown(text)
-    filename = url.split('/')[-1] + '.md'
+    content = extract_content(html)
+    markdown = convert_to_markdown(content)
+    filename = url.replace('/', '_').replace(':', '') + '.md'
     save_markdown(markdown, filename)
     return filename
 
@@ -56,6 +60,7 @@ def main(sitemap_url):
                 print(f'Saved {filename}')
             except Exception as e:
                 print(f'Error processing {url}: {e}')
+            time.sleep(1)  # Add delay between requests
 
 if __name__ == "__main__":
     sitemap_url = 'https://docs.dynatrace.com/docs/sitemap.xml'
