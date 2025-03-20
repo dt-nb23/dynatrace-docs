@@ -2,8 +2,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import markdownify
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def fetch_sitemap(url):
     response = requests.get(url)
@@ -46,8 +46,9 @@ def save_markdown(content, filename, output_dir):
     filepath = os.path.join(output_dir, filename)
     link = filename.replace('_', '/')
     with open(filepath, 'w', encoding='utf-8') as file:
-        file.write(content)
         file.write(f"[Link to Documentation Page]({link})\n\n")
+        file.write(content)
+        file.write(f"\n\n[Link to Documentation Page]({link})")
 
 def process_url(url, output_dir):
     html = fetch_page(url)
@@ -61,16 +62,16 @@ def process_sitemap(sitemap_url, output_dir):
     sitemap_xml = fetch_sitemap(sitemap_url)
     urls = parse_sitemap(sitemap_xml)
     
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(process_url, url, output_dir): url for url in urls}
-        for future in as_completed(futures):
-            url = futures[future]
+    with ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers as needed
+        future_to_url = {executor.submit(process_url, url, output_dir): url for url in urls}
+        
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
             try:
                 filename = future.result()
                 print(f'Saved {filename} in {output_dir}')
             except Exception as e:
                 print(f'Error processing {url}: {e}')
-            time.sleep(1)  # Add delay between requests
 
 def main():
     sitemaps = {
@@ -79,7 +80,7 @@ def main():
     }
     
     for sitemap_url, output_dir in sitemaps.items():
-        process_sitemap(sitemap_url, os.path.join('../outputs', output_dir))
+        process_sitemap(sitemap_url, os.path.join('..', 'outputs', output_dir))
 
 if __name__ == "__main__":
     main()
